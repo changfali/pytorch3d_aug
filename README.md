@@ -1,6 +1,6 @@
-# Pytorch3D-Me
+# Pytorch3D-aug
 
-A [Pytorch3D](https://github.com/facebookresearch/pytorch3d) 0.6.1 extension with features introduced in [FitMe](https://github.com/lattas/FitMe) (CVPR 2023) and [AvatarMe++](https://github.com/lattas/avatarme) (TPAMI 2021),
+A [Pytorch3D](https://github.com/facebookresearch/pytorch3d) 0.7.6 extension with features introduced in [FitMe](https://github.com/lattas/FitMe) (CVPR 2023) and [AvatarMe++](https://github.com/lattas/avatarme) (TPAMI 2021),
 which introduces additional functionality in texturing and shading. In detail we add:
 - A renderer object for rendering directly in UV-space,
 - A blinn-phong based shader,
@@ -21,15 +21,14 @@ d) previous with additional occlusion shadow. Additional discussion is in includ
 Rendering with all added features is about 15% slower than the standard pytorch3D `SoftPhongShader`.
 
 ## Installation
-To install `Pytorch3d-Me` you need to build this repo from source
+To install `Pytorch3d-aug` you need to build this repo from source
 following the standard installation instructions at [INSTALL.md](./INSTALL.md).
 In short, first install the prerequisites:
 ```
 conda create -n pytorch3d python=3.9
 conda activate pytorch3d
-conda install -c pytorch pytorch=1.9.1 torchvision cudatoolkit=10.2
-conda install -c fvcore -c iopath -c conda-forge fvcore iopath
-conda install -c bottler nvidiacub
+conda install pytorch=1.13.0 torchvision pytorch-cuda=11.6 -c pytorch -c nvidia -y
+conda install -c fvcore -c iopath -c conda-forge fvcore iopath -y
 
 # Demos and examples
 conda install jupyter
@@ -42,7 +41,7 @@ pip install -e .
 ```
 
 ## Getting Started
-You can use `pytorch3d-me` in the same manner as `pytorch3d`, 
+You can use `pytorch3d-aug` in the same manner as `pytorch3d`, 
 along with our expanded `Textures` and `Shaders` classes and `io` functions.
 
 To load a set of reflectance textures you can use
