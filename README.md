@@ -1,9 +1,129 @@
-<img src="https://raw.githubusercontent.com/facebookresearch/pytorch3d/main/.github/pytorch3dlogo.png" width="900"/>
+# Pytorch3D-Me
 
-[![CircleCI](https://circleci.com/gh/facebookresearch/pytorch3d.svg?style=svg)](https://circleci.com/gh/facebookresearch/pytorch3d)
-[![Anaconda-Server Badge](https://anaconda.org/pytorch3d/pytorch3d/badges/version.svg)](https://anaconda.org/pytorch3d/pytorch3d)
+A [Pytorch3D](https://github.com/facebookresearch/pytorch3d) 0.6.1 extension with features introduced in [FitMe](https://github.com/lattas/FitMe) (CVPR 2023) and [AvatarMe++](https://github.com/lattas/avatarme) (TPAMI 2021),
+which introduces additional functionality in texturing and shading. In detail we add:
+- A renderer object for rendering directly in UV-space,
+- A blinn-phong based shader,
+- The option to use multiple reflectance textures with a single mesh, including Diffuse Albedo, Specular Albedo, Diffuse Normals, Specular Normals and Occlusion Shadow,
+- Spatially-varying specular shininess,
+- Subsurface-scattering approximation with spatially-varying translucency,
+- Multiple Point and Directional lights per rendered batch item.
 
-# Introduction
+<br></br>
+Below we show the skin shading comparison between 
+a) `Pytorch3d` `TexturedSoftPhongShader` with the albedo texture and shape normals,
+b) our `Pytorch3d-Me` Blinn-Phong shader, with separate textures for diffuse and specular albedo and normals
+c) previous with additional subsurface scattering approximation and
+d) previous with additional occlusion shadow. Additional discussion is in included in the [AvatarMe++](https://arxiv.org/abs/2112.05957) paper and the qualitative comparison is shown below:
+
+![AvatarMe Rendering Comparisons](media/rendering-comparisons.png)
+
+Rendering with all added features is about 15% slower than the standard pytorch3D `SoftPhongShader`.
+
+## Installation
+To install `Pytorch3d-Me` you need to build this repo from source
+following the standard installation instructions at [INSTALL.md](./INSTALL.md).
+In short, first install the prerequisites:
+```
+conda create -n pytorch3d python=3.9
+conda activate pytorch3d
+conda install -c pytorch pytorch=1.9.1 torchvision cudatoolkit=10.2
+conda install -c fvcore -c iopath -c conda-forge fvcore iopath
+conda install -c bottler nvidiacub
+
+# Demos and examples
+conda install jupyter
+pip install scikit-image matplotlib imageio plotly opencv-python
+```
+And then build and install the project:
+```
+cd pytorch3d-me
+pip install -e .
+```
+
+## Getting Started
+You can use `pytorch3d-me` in the same manner as `pytorch3d`, 
+along with our expanded `Textures` and `Shaders` classes and `io` functions.
+
+To load a set of reflectance textures you can use
+```python
+from pytorch3d.io import load_objs_and_textures
+
+meshes = load_objs_and_textures(mesh_dir,
+                    diffAlbedos=da_dir, specAlbedos=sa_dir,
+                    diffNormals=dn_dir, specNormals=sn_dir,
+                    shininess=sh_dir, translucency=tr_dir,
+                    device=device)
+```
+
+where each `_dir` path shows to a list of image files of the same dimensions.
+
+To use our Blinn-Phong shader with spatially varying reflectance,
+pass the `MultiTexturedSoftPhongShader` shader in the `MeshRenderer` constructor,
+with the optional `highlight='blinn_phong'` argument for Blinn Phong shading,
+and `normal_space='tangent'` for tangent-space specular normals, instead of object space:
+
+```python
+from pytorch3d.renderer import MeshRenderer, MultiTexturedSoftPhongShader
+
+renderer = MeshRenderer(
+    rasterizer=MeshRasterizer(
+        cameras=cameras, raster_settings=raster_settings
+    ),
+    shader=MultiTexturedSoftPhongShader(
+        device=device, cameras=cameras, lights=lights,
+        highlight='blinn_phong', normal_space='tangent'
+    )
+)
+```
+
+A detailed example is included at [`demo/demo.ipynb`](./demo/demo.ipynb). 
+For any further questions please raise an Issue or contact us. 
+
+## Citations
+ 
+If you find this extension useful in your research consider citing the works below:
+```bibtex
+@inproceedings{lattas2023fitme,
+  title={FitMe: Deep Photorealistic 3D Morphable Model Avatars},
+  author={Lattas, Alexandros and Moschoglou, Stylianos and Ploumpis, Stylianos
+          and Gecer, Baris and Deng, Jiankang and Zafeiriou, Stefanos},
+  booktitle={Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition},
+  pages={8629--8640},
+  year={2023}
+}
+
+@article{lattas2021avatarme++,
+  title={Avatarme++: Facial shape and brdf inference with photorealistic rendering-aware gans},
+  author={Lattas, Alexandros and Moschoglou, Stylianos and Ploumpis, Stylianos
+          and Gecer, Baris and Ghosh, Abhijeet and Zafeiriou, Stefanos},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  volume={44},
+  number={12},
+  pages={9269--9284},
+  year={2021},
+  publisher={IEEE}
+}
+```
+as well as the main Pytorch3D project:
+```bibtex
+@article{ravi2020pytorch3d,
+    author = {Nikhila Ravi and Jeremy Reizenstein and David Novotny and Taylor Gordon
+                  and Wan-Yen Lo and Justin Johnson and Georgia Gkioxari},
+    title = {Accelerating 3D Deep Learning with PyTorch3D},
+    journal = {arXiv:2007.08501},
+    year = {2020},
+}
+```
+
+For completion, we copy below the official README of PyTorch3D:
+
+---
+<br></br>
+<br></br>
+<br></br>
+
+## Introduction
 
 PyTorch3D provides efficient, reusable components for 3D Computer Vision research with [PyTorch](https://pytorch.org).
 
@@ -12,7 +132,6 @@ Key features include:
 - Data structure for storing and manipulating triangle meshes
 - Efficient operations on triangle meshes (projective transformations, graph convolution, sampling, loss functions)
 - A differentiable mesh renderer
-- Implicitron, see [its README](projects/implicitron_trainer), a framework for new-view synthesis via implicit representations. ([blog post](https://ai.facebook.com/blog/implicitron-a-new-modular-extensible-framework-for-neural-implicit-representations-in-pytorch3d/))
 
 PyTorch3D is designed to integrate smoothly with deep learning methods for predicting and manipulating 3D data.
 For this reason, all operators in PyTorch3D:
@@ -23,8 +142,6 @@ For this reason, all operators in PyTorch3D:
 - Can utilize GPUs for acceleration
 
 Within FAIR, PyTorch3D has been used to power research projects such as [Mesh R-CNN](https://arxiv.org/abs/1906.02739).
-
-See our [blog post](https://ai.facebook.com/blog/-introducing-pytorch3d-an-open-source-library-for-3d-deep-learning/) to see more demos and learn about PyTorch3D.
 
 ## Installation
 
@@ -57,11 +174,6 @@ Get started with PyTorch3D by trying one of the tutorial notebooks.
 | <img src="https://raw.githubusercontent.com/facebookresearch/pytorch3d/main/.github/fit_textured_volume.gif" width="310"/> | <img src="https://raw.githubusercontent.com/facebookresearch/pytorch3d/main/.github/fit_nerf.gif" width="310" height="310"/>
 |:------------------------------------------------------------:|:--------------------------------------------------:|
 | [Fit Textured Volume](https://github.com/facebookresearch/pytorch3d/blob/main/docs/tutorials/fit_textured_volume.ipynb)| [Fit A Simple Neural Radiance Field](https://github.com/facebookresearch/pytorch3d/blob/main/docs/tutorials/fit_simple_neural_radiance_field.ipynb)|
-
-| <img src="https://raw.githubusercontent.com/facebookresearch/pytorch3d/main/.github/fit_textured_volume.gif" width="310"/> | <img src="https://raw.githubusercontent.com/facebookresearch/pytorch3d/main/.github/implicitron_config.gif" width="310" height="310"/>
-|:------------------------------------------------------------:|:--------------------------------------------------:|
-| [Fit Textured Volume in Implicitron](https://github.com/facebookresearch/pytorch3d/blob/main/docs/tutorials/implicitron_volumes.ipynb)| [Implicitron Config System](https://github.com/facebookresearch/pytorch3d/blob/main/docs/tutorials/implicitron_config_system.ipynb)|
-
 
 
 
@@ -101,8 +213,6 @@ In alphabetical order:
 
 * Amitav Baruah
 * Steve Branson
-* Krzysztof Chalupka
-* Jiali Duan
 * Luya Gao
 * Georgia Gkioxari
 * Taylor Gordon
@@ -145,22 +255,6 @@ If you are using the pulsar backend for sphere-rendering (the `PulsarPointRender
 ## News
 
 Please see below for a timeline of the codebase updates in reverse chronological order. We are sharing updates on the releases as well as research projects which are built with PyTorch3D. The changelogs for the releases are available under [`Releases`](https://github.com/facebookresearch/pytorch3d/releases),  and the builds can be installed using `conda` as per the instructions in [INSTALL.md](INSTALL.md).
-
-**[Oct 31st 2023]:**   PyTorch3D [v0.7.5](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.5) released.
-
-**[May 10th 2023]:**   PyTorch3D [v0.7.4](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.4) released.
-
-**[Apr 5th 2023]:**   PyTorch3D [v0.7.3](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.3) released.
-
-**[Dec 19th 2022]:**   PyTorch3D [v0.7.2](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.2) released.
-
-**[Oct 23rd 2022]:**   PyTorch3D [v0.7.1](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.1) released.
-
-**[Aug 10th 2022]:**   PyTorch3D [v0.7.0](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.7.0) released with Implicitron and MeshRasterizerOpenGL.
-
-**[Apr 28th 2022]:**   PyTorch3D [v0.6.2](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.6.2) released
-
-**[Dec 16th 2021]:**   PyTorch3D [v0.6.1](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.6.1) released
 
 **[Oct 6th 2021]:**   PyTorch3D [v0.6.0](https://github.com/facebookresearch/pytorch3d/releases/tag/v0.6.0) released
 
